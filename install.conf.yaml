@@ -1,0 +1,51 @@
+- clean:
+    - '~'
+    - ~/.config
+    - ~/.ssh
+
+- shell:
+    - [git submodule update --init --recursive, Installing submodules.]
+    - [mkdir -p ~/bin ~/src ~/.config ~/tmp ~/.ssh ~/.gitfiles ~/.local, Creating dirs.]
+    - [test -f ~/.gitconfig || cp gitconfig ~/.gitconfig]
+    - [test -f ~/.ssh/config || cp sshconfig ~/.ssh/config]
+
+- link:
+    ~/.profile: profile
+    ~/.bash_profile: bash_profile
+    ~/.bashrc: bashrc
+    ~/.bash_logout: bash_logout
+
+    #~/.xinitrc: xsession
+    #~/.xsession: xsession
+    #~/.xprofile: xprofile
+
+    #~/.screenrc: screenrc
+    ~/.tmux.conf: tmux.conf
+
+    ~/.vimrc: vim/vimrc
+    ~/.vim:
+        path: vim/
+        create: true
+
+    #~/.ssh/config: sshconfig # copy template instead
+
+    #~/.gitconfig: gitconfig # copy template instead
+    ~/.gitfiles/:
+        glob: true
+        path: gitfiles/*
+        relink: true
+
+    ~/.fzf:
+        path: fzf/
+        create: true
+
+    ~/.config/:
+        glob: true
+        path: config/*
+        relink: true
+
+    ~/bin/:
+        glob: true
+        path: bin/*
+        relink: true
+

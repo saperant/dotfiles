@@ -1,0 +1,5 @@
+Include *.conf
+
+Host github.com
+    User git
+

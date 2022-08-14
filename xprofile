@@ -1,0 +1,3 @@
+# Depends on autorandr: Configure multi display setup on Wayland automatically
+command -v autorandr >/dev/null 2>&1 && autorandr --change
+

@@ -1,0 +1,52 @@
+[user]
+    name =
+    email =
+    signingKey = null
+
+[core]
+    quotepath = false
+    excludesfile = ~/.gitfiles/gitignore
+    attributesfile = ~/.gitfiles/gitattributes
+    pager =
+	whitespace = trailing-space
+
+[push]
+    default = matching
+
+[color]
+    status = auto
+    branch = auto
+
+[alias]
+    lg = log --graph --pretty=tformat:'%Cred%h%Creset -%C(magenta)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+    pl = pull --rebase
+    addnows = !sh -c 'git diff -U0 -w --no-color "$@" | git apply --cached --ignore-whitespace --unidiff-zero -'
+
+[diff "javaclass"]
+      textconv = javap -c
+      cachetextconv = true
+
+[diff "odf"]
+      textconv = odf2txt --break-sentences
+
+#[diff "markdown"]
+#      textconv = pandoc -t markdown_github --no-wrap --filter=PDsentences.hs
+
+[man]
+      viewer = catman
+
+[man "catman"]
+     cmd = man -P cat
+
+[branch "master"]
+    rebase = true
+
+[branch]
+    autosetuprebase = always
+
+[gpg]
+	program = null
+[commit]
+	gpgSign = false
+[tag]
+	forceSignAnnotated = false

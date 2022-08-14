@@ -1,0 +1,3 @@
+*.class diff=javaclass
+*.odt   diff=odf
+*.md    diff=markdown

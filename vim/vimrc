@@ -1,0 +1,239 @@
+set nocompatible " not vi compatible
+
+"let g:powerline_pycmd = 'py3'
+
+"---------------
+" Plug framework
+"---------------
+call plug#begin('~/.vim/plugged')
+"Plug '~/.powerline/powerline/bindings/vim'
+"Plug 'chriskempson/base16-vim'
+Plug 'scrooloose/nerdtree'
+Plug 'tpope/vim-fugitive'
+"Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug '~/.fzf'
+Plug 'junegunn/fzf.vim'
+Plug 'christoomey/vim-tmux-navigator'
+call plug#end()
+
+"------------------
+" Syntax and indent
+"------------------
+syntax on " turn on syntax highlighting
+set showmatch " show matching braces when text indicator is over them
+
+" highlight current line, but only in active window
+augroup CursorLineOnlyInActiveWindow
+    autocmd!
+    autocmd VimEnter,WinEnter,BufWinEnter * setlocal cursorline
+    autocmd WinLeave * setlocal nocursorline
+augroup END
+
+filetype plugin indent on " enable file type detection
+set nowrap         " Don't wrap long lines
+set autoindent     " Do auto-indenting
+set nocindent      " But don't do wacky C style indenting
+
+"---------------------
+" Basic editing config
+"---------------------
+set shortmess=I " disable startup message
+set nu " number lines
+set rnu " relative line numbering
+set incsearch " incremental search (as string is being typed)
+set hls " highlight search
+set listchars=tab:>>,nbsp:~ " set list to see tabs and non-breakable spaces
+set lbr " line break
+set ruler " show current position in file
+set scrolloff=5 " show lines above and below cursor (when possible)
+set noshowmode " hide mode
+set laststatus=2
+set showcmd " show current command
+set backspace=indent,eol,start " allow backspacing over everything
+set timeout timeoutlen=1000 ttimeoutlen=100 " fix slow O inserts
+set lazyredraw " skip redrawing screen in some cases
+set autochdir " automatically set current directory to directory of last opened file
+set hidden " allow auto-hiding of edited buffers
+set history=8192 " more history
+set nojoinspaces " suppress inserting two spaces between sentences
+
+" use 4 spaces instead of tabs during formatting
+set expandtab      " Use spaces instead of tabs
+set shiftwidth=4
+set softtabstop=4  " Use spaces instead of tabs
+set tabstop=4      " If you insist on using tabs, use the same tabstop
+
+" smart case-sensitive search
+set ignorecase
+set smartcase
+
+" tab completion for files/bufferss
+set wildmode=longest,list
+set wildmenu
+set mouse+=a " enable mouse mode (scrolling, selection, etc)
+
+" use system clipboard
+set clipboard=unnamedplus
+
+if &term =~ '^screen'
+    " tmux knows the extended mouse mode
+    set ttymouse=xterm2
+else
+    " TODO: this is borked with tmux
+    " base16 color scheme
+    let base16colorspace=256 " access colors present in 256 colorspace
+    if filereadable(expand("~/.vimrc_background"))
+        let base16colorspace=256
+        source ~/.vimrc_background
+        if &term =~ '^rxvt'
+            " pass
+        elseif v:version >= 800
+            set termguicolors
+        endif
+    endif
+endif
+
+"--------------------
+" Misc configurations
+"--------------------
+
+" custom leader key
+map <Space> <Leader>
+
+" unbind keys
+"map <C-a> <Nop>
+"map <C-x> <Nop>
+"nmap Q <Nop>
+
+" disable audible bell
+set noerrorbells visualbell t_vb=
+
+" open new split panes to right and bottom, which feels more natural
+set splitbelow
+set splitright
+
+" quicker window movement
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-h> <C-w>h
+nnoremap <C-l> <C-w>l
+nnoremap <C-ö> :tabprevious<CR>
+nnoremap <C-ä> :tabNext<CR>
+" or using leader key
+nnoremap <Leader>j <C-w>j
+nnoremap <Leader>k <C-w>k
+nnoremap <Leader>h <C-w>h
+nnoremap <Leader>l <C-w>l
+nnoremap <Leader>ö :tabprevious<CR>
+nnoremap <Leader>ä :tabNext<CR>
+
+" move by display lines
+noremap <silent> k gk
+noremap <silent> j gj
+noremap <silent> 0 g0
+noremap <silent> $ g$
+
+" tmux like splits
+nnoremap <Leader>% :vsplit<CR>
+nnoremap <Leader>" :split<CR>
+
+" toggle relative numbering
+nnoremap <C-n> :set rnu!<CR>
+
+" save read-only files
+command -nargs=0 Sudow w !sudo tee % >/dev/null
+
+" tabs
+
+" maps
+nnoremap <Leader>a :Maps<CR>
+
+" buffers
+nnoremap <Leader>b :Buffers<CR>
+
+" commands
+nnoremap <Leader>c :Commands<CR>
+
+" file commands
+nnoremap <Leader>fw :w<CR>
+nnoremap <Leader>fF :Files
+nnoremap <Leader>ff :FZF<CR>
+nnoremap <Leader>fh :History<CR>
+nnoremap <Leader>ft :Filetypes<CR>
+
+" git
+nnoremap <Leader>gs :Gstatus<CR>
+nnoremap <Leader>gf :Gfiles
+nnoremap <Leader>gF :Gfiles?<CR>
+
+" history
+nnoremap <Leader>hf :History<CR>
+nnoremap <Leader>hc :History:<CR>
+nnoremap <Leader>hs :History/<CR>
+
+" marks
+nnoremap <Leader>m :Marks<CR>
+
+" nerd tree
+nnoremap <Leader>n :NERDTreeToggle<CR>
+nnoremap <Leader>N :NERDTreeFind<CR>
+
+" vim-plug
+nnoremap <Leader>pi :PlugInstall<CR>
+nnoremap <Leader>pu :PlugUpdate<CR>
+
+" snippets
+nnoremap <Leader>s :Snippets<CR>
+
+" windows
+nnoremap <Leader>w :Windows<CR>
+
+" helptags
+nnoremap <Leader>? :Helptags<CR>
+
+"---------------------
+" Plugin configuration
+"---------------------
+
+
+" nerdtree ----------------------------------------------
+
+" fzf ---------------------------------------------------
+
+" vim fugitive ------------------------------------------
+
+
+"---------------------
+" Local customizations
+"---------------------
+
+" local customizations in ~/.vimrc_local
+let $LOCALFILE=expand("~/.vimrc_local")
+if filereadable($LOCALFILE)
+    source $LOCALFILE
+endif
+
+" lhs comments -- select a range then hit ,# to insert hash comments
+" or ,/ for // comments, or ,c to clear comments.
+map ,# :s/^/#/<CR> <Esc>:nohlsearch <CR>
+map ,/ :s/^/\/\//<CR> <Esc>:nohlsearch <CR>
+map ,c :s/^\/\/\\|^--\\|^> \\|^[#"%!;]//<CR> <Esc>:nohlsearch<CR>
+
+" wrapping comments -- select a range then hit ,* to put  /* */ around
+" selection, or ,d to clear them
+map ,* :s/^\(.*\)$/\/\* \1 \*\//<CR> <Esc>:nohlsearch<CR>
+map ,d :s/^\([/(]\*\\|<!--\) \(.*\) \(\*[/)]\\|-->\)$/\2/<CR> <Esc>:nohlsearch<CR>
+
+" to clear hlsearch -- hit ,h to clear highlighting from last search
+map ,h :nohlsearch <CR>
+
+" " Switch syntax highlighting on, when the terminal has colors
+" " Also switch on highlighting the last used search pattern.
+" if &t_Co > 2 || has("gui_running")
+"   syntax on
+"   set hlsearch
+" endif
+"
+" if has("autocmd")
+"     autocmd BufNewFile,BufRead Makefile set noexpandtab " Makefiles ensure that we don't expand tabs since tabs are special
+" endif
