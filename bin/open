@@ -2,9 +2,9 @@
 
 if [[ -z $TOOLBOX_PATH ]]
 then
-    xdg-open $@
+    xdg-open "$@"
 else
     # Running inside toolbox
-    xdg-open $@ || host-spawn xdg-open $@
+    xdg-open "$@" || host-spawn xdg-open "$@"
 fi
 
