@@ -7,7 +7,7 @@
     quotepath = false
     excludesfile = ~/.gitfiles/gitignore
     attributesfile = ~/.gitfiles/gitattributes
-    pager =
+    pager = less -r
 	whitespace = trailing-space
 
 [push]

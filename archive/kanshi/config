@@ -1,0 +1,8 @@
+#include /etc/kanshi/config.d/*
+
+profile laptop {
+    output eDP-1 mode 1920x1080 position 0,0
+    #output DP-2 enable
+    exec swaymsg workspace 1, move workspace to eDP-1
+}
+

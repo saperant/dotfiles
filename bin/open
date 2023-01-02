@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [[ -z $TOOLBOX_PATH ]]
+then
+    xdg-open $@
+else
+    # Running inside toolbox
+    xdg-open $@ || host-spawn xdg-open $@
+fi
+

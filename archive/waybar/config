@@ -1,0 +1,200 @@
+{
+    "modules-left": [
+        "sway/workspaces",
+        "sway/mode"
+    ],
+    "modules-center": [
+        "sway/window" //, "mpd"
+    ],
+    "modules-right": [
+        "idle_inhibitor",
+        "cpu",
+        "memory",
+        "network",
+        "pulseaudio",
+        "backlight",
+        "temperature",
+        "battery",
+        "clock",
+        "tray"
+        //"custom/power",
+    ],
+    "sway/workspaces": {
+        "disable-scroll": true,
+        "all-outputs": false,
+        "format": "{name}: {icon}",
+        "format-icons": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": "",
+            "5": "",
+            "urgent": "",
+            "focused": "",
+            "default": ""
+        }
+    },
+    "sway/mode": {
+        "format": "<span style=\"italic\">{}</span>"
+    },
+    "mpd": {
+        "format": "{stateIcon} {consumeIcon}{randomIcon}{repeatIcon}{singleIcon}{artist} - {album} - {title} ({elapsedTime:%M:%S}/{totalTime:%M:%S}) ⸨{songPosition}|{queueLength}⸩ {volume}% ",
+        "format-disconnected": "Disconnected ",
+        "format-stopped": "{consumeIcon}{randomIcon}{repeatIcon}{singleIcon}Stopped ",
+        "unknown-tag": "N/A",
+        "interval": 2,
+        "consume-icons": {
+            "on": " "
+        },
+        "random-icons": {
+            "off": "<span color=\"#f53c3c\"></span> ",
+            "on": " "
+        },
+        "repeat-icons": {
+            "on": " "
+        },
+        "single-icons": {
+            "on": "1 "
+        },
+        "state-icons": {
+            "paused": "",
+            "playing": ""
+        },
+        "tooltip-format": "MPD (connected)",
+        "tooltip-format-disconnected": "MPD (disconnected)"
+    },
+    "network": {
+        // "interface": "wlp2*", // (Optional) To force the use of this interface
+        "format-wifi": " {essid} ({signalStrength}%)",
+        "format-ethernet": " {ifname}: {ipaddr}/{cidr}",
+        "format-linked": " {ifname} (no IP)",
+        "format-disconnected": "⚠ disconnected",
+        "on-click": "sway-sensible-terminal nmtui",
+        "tooltip-format-wifi": "{ifname}: {ipaddr}/{cidr}"
+    },
+    "idle_inhibitor": {
+        "format": "{icon} {status}",
+        "format-icons": {
+            "activated": "",
+            "deactivated": ""
+        },
+        "min-length": 15,
+        "tooltip": false
+    },
+    "tray": {
+        "icon-size": 15,
+        "spacing": 10
+    },
+    "clock": {
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+        "format": "{:%d.%m.%Y %H:%M}",
+        //"on-click": "orgmodestuff?"
+    },
+    "cpu": {
+        "format": " {usage}%",
+        "tooltip": false,
+        "min-length": 7,
+        "interval": 1,
+        "on-click": "sway-sensible-terminal top"
+    },
+    "memory": {
+        "format": " {}%",
+        "min-length": 7,
+        "tooltip": false,
+        "interval": 1,
+        "on-click": "sway-sensible-terminal top"
+    },
+    "temperature": {
+        "hwmon-path": "/sys/class/hwmon/hwmon8/temp1_input",
+        "critical-threshold": 100,
+        "format-critical": "{icon} {temperatureC}°C",
+        "format": "{icon} {temperatureC}°C",
+        "min-length": 7,
+        "tooltip": false,
+        "format-icons": ["", "", ""],
+        "interval": 2
+    },
+    "battery": {
+        "states": {
+            // "good": 95,
+            "warning": 20,
+            "critical": 10
+        },
+        "format": "{icon} {capacity}%",
+        "format-charging": " {capacity}%",
+        "format-plugged": " {capacity}%",
+        "tooltip": true,
+        "tooltip-format": "{time}",
+        "format-full": " 100%",
+        "min-length": 9,
+        "format-icons": ["", "", "", "", "", "", "", "", "", "", ""],
+        "format-icons-charging": ["", "", "", "", "", "", ""],
+        "on-click-right": "sway-sensible-terminal sudo powertop",
+        "interval": 2
+    },
+    "pulseaudio": {
+        "scroll-step": "5%", // %, can be a float
+        //"format": "{icon} {volume}% {format_source}",
+        "format": "{icon} {volume}%",
+        "format-bluetooth": " {icon} {volume}% {format_source}",
+        "format-bluetooth-muted": "   {format_source}",
+        //"format-muted": " {format_source}",
+        "format-muted": " {format_source}",
+        "format-source": " {volume}%",
+        "format-source-muted": "",
+        "format-icons": {
+            "headphone": "",
+            "hands-free": "",
+            "headset": "",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": ["奄", "奔", "墳", ""]
+        },
+        "on-click-right": "pavucontrol",
+        "on-click": "sway-sensible-terminal pulsemixer",
+        "tooltip": false,
+        "min-length": 7
+    },
+    "custom/media": {
+        "format": "{icon} {}",
+        "return-type": "json",
+        "max-length": 40,
+        "tooltip": false,
+        "format-icons": {
+            "spotify": "",
+            "default": "🎜"
+        },
+        "escape": true,
+        "exec": "$HOME/.config/waybar/mediaplayer.py 2> /dev/null" // Script in resources folder
+    },
+    "custom/power": {
+        "format": "⏻",
+        "on-click": "swaynag -t warning -m 'Power Menu Options' -b 'Logout' 'swaymsg exit' -b 'Restart' 'shutdown -r now' -b 'Shutdown'  'shutdown -h now' --background=#005566 --button-background=#009999 --button-border=#002b33 --border-bottom=#002b33"
+    },
+    "backlight": {
+        "device": "intel_backlight",
+        "format": "{icon} {percent}%",
+        "format-icons": ["", "", "", ""],
+        "tooltip": false,
+        "min-length": 8
+    },
+    "sway/window": {
+        "max-length": 30,
+        "tooltip": false,
+        "format": " {}"
+    },
+    "custom/sep": {
+        "format": " | ",
+        "tooltip": false,
+    },
+    "wlr/taskbar": {
+        "format": "{icon}",
+        "icon-size": 14,
+        "icon-theme": "Numix-Circle",
+        "tooltip-format": "{title}",
+        "on-click": "activate",
+        "on-click-middle": "close",
+        "tooltip": false,
+    }
+}
