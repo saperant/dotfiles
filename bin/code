@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ ! -z "$TOOLBOX_PATH" ]]
+then
+    exec toolbox-vscode $@
+elif [[ ! -z "$DISTROBOX_ENTER_PATH" ]]
+then
+    exec toolbox-vscode $@
+else
+    exec /var/lib/flatpak/exports/bin/com.visualstudio.code $@
+fi
+

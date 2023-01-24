@@ -1,12 +1,12 @@
-[submodule "dotbot"]
-	path = dotbot
-	url = https://github.com/anishathalye/dotbot
-[submodule "emacs.d"]
-	path = emacs.d
-	url = https://github.com/syl20bnr/spacemacs
-[submodule "fzf"]
-	path = fzf
-	url = https://github.com/junegunn/fzf
 [submodule "config/ranger/plugins/ranger_devicons"]
 	path = config/ranger/plugins/ranger_devicons
 	url = https://github.com/alexanderjeurissen/ranger_devicons
+[submodule "ext/toolbox-vscode"]
+	path = ext/toolbox-vscode
+	url = https://github.com/owtaylor/toolbox-vscode.git
+[submodule "ext/fzf"]
+	path = ext/fzf
+	url = https://github.com/junegunn/fzf
+[submodule "ext/dotbot"]
+	path = ext/dotbot
+	url = https://github.com/anishathalye/dotbot

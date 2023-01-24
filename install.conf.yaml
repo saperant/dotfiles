@@ -15,6 +15,10 @@
     ~/.bashrc: bashrc
     ~/.bash_logout: bash_logout
 
+    ~/bin/toolbox-vscode: ext/toolbox-vscode/code.sh
+    ~/bin/podman-host: ext/toolbox-vscode/podman-host.sh
+    ~/bin/open: ~/bin/xdg-open
+
     #~/.xinitrc: xsession
     #~/.xsession: xsession
     #~/.xprofile: xprofile
@@ -36,7 +40,7 @@
         relink: true
 
     ~/.fzf:
-        path: fzf/
+        path: ext/fzf/
         create: true
 
     ~/.config/:
