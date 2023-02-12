@@ -5,7 +5,7 @@
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules.]
-    - [mkdir -p ~/bin ~/src ~/.config ~/tmp ~/.ssh ~/.gitfiles ~/.local ~/.bashrc.d, Creating dirs.]
+    - [mkdir -p ~/bin ~/src ~/.config ~/.ssh ~/.gitfiles ~/.local ~/.bashrc.d, Creating dirs.]
     - [test -f ~/.gitconfig || cp gitconfig ~/.gitconfig]
     - [test -f ~/.ssh/config || cp sshconfig ~/.ssh/config]
 
