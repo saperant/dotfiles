@@ -21,6 +21,7 @@
     lg = log --graph --pretty=tformat:'%Cred%h%Creset -%C(magenta)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
     pl = pull --rebase
     addnows = !sh -c 'git diff -U0 -w --no-color "$@" | git apply --cached --ignore-whitespace --unidiff-zero -'
+    find = log --pretty=\"format:%Cgreen%H %Cblue%s\" --name-status --grep
 
 [diff "javaclass"]
       textconv = javap -c

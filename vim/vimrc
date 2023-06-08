@@ -10,10 +10,11 @@ call plug#begin('~/.vim/plugged')
 "Plug 'chriskempson/base16-vim'
 Plug 'scrooloose/nerdtree'
 Plug 'tpope/vim-fugitive'
-"Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug '~/.fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'christoomey/vim-tmux-navigator'
+"Plug 'dmerejkowsky/vim-ale'
 call plug#end()
 
 "------------------
@@ -39,7 +40,7 @@ set nocindent      " But don't do wacky C style indenting
 "---------------------
 set shortmess=I " disable startup message
 set nu " number lines
-set rnu " relative line numbering
+"set rnu " relative line numbering
 set incsearch " incremental search (as string is being typed)
 set hls " highlight search
 set listchars=tab:>>,nbsp:~ " set list to see tabs and non-breakable spaces
@@ -156,15 +157,15 @@ nnoremap <Leader>c :Commands<CR>
 
 " file commands
 nnoremap <Leader>fw :w<CR>
-nnoremap <Leader>fF :Files
+nnoremap <Leader>fF :Files<CR>
 nnoremap <Leader>ff :FZF<CR>
 nnoremap <Leader>fh :History<CR>
 nnoremap <Leader>ft :Filetypes<CR>
 
 " git
-nnoremap <Leader>gs :Gstatus<CR>
-nnoremap <Leader>gf :Gfiles
-nnoremap <Leader>gF :Gfiles?<CR>
+nnoremap <Leader>gs :GStatus<CR>
+nnoremap <Leader>gf :GFiles<CR>
+nnoremap <Leader>gF :GFiles?<CR>
 
 " history
 nnoremap <Leader>hf :History<CR>
@@ -202,6 +203,13 @@ nnoremap <Leader>? :Helptags<CR>
 
 " vim fugitive ------------------------------------------
 
+" ale ---------------------------------------------------
+"let b:ale_fixers = ['prettier', 'eslint', 'tslint']
+
+" coc ---------------------------------------------------
+nnoremap <Leader>cl :CocList<CR>
+nnoremap <Leader>cls :CocList symbols<CR>
+nnoremap <Leader>clo :CocList outline<CR>
 
 "---------------------
 " Local customizations
