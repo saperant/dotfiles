@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# code: Visual Studio Code from anywhere.
+#
+# Inside a toolbox/distrobox container, attach the host's VS Code Flatpak to
+# the container (toolbox-vscode). Outside, run whichever VS Code is
+# installed: the Flatpak (system or user), or a native `code` further down
+# PATH (rpm, or a tarball in ~/.local on machines without root).
+
+if [ -f /run/.containerenv ] && { [ -f /run/.toolboxenv ] || [ -n "$TOOLBOX_PATH" ] || [ -n "$DISTROBOX_ENTER_PATH" ]; }; then
+    exec toolbox-vscode "$@"
+fi
+
+for flatpak in \
+    /var/lib/flatpak/exports/bin/com.visualstudio.code \
+    "$HOME/.local/share/flatpak/exports/bin/com.visualstudio.code"
+do
+    [ -x "$flatpak" ] && exec "$flatpak" "$@"
+done
+
+self=$(realpath "$0")
+while IFS= read -r cmd; do
+    [ "$(realpath "$cmd")" != "$self" ] && exec "$cmd" "$@"
+done < <(type -ap code)
+
+echo "code: VS Code not found (Flatpak com.visualstudio.code or a code binary on PATH)" >&2
+exit 127

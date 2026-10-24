@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# xdg-open wrapper. Inside a toolbox/distrobox/podman container the desktop
+# and its applications live on the host, so open things there; outside a
+# container, hand over to the real xdg-open.
+
+if [ ! -f /run/.containerenv ]; then
+    # the real xdg-open: the next one on PATH after this wrapper
+    self=$(realpath "$0")
+    while IFS= read -r cmd; do
+        [ "$(realpath "$cmd")" != "$self" ] && exec "$cmd" "$@"
+    done < <(type -ap xdg-open)
+    echo "xdg-open: xdg-utils is not installed" >&2
+    exit 127
+fi
+
+if [ $# -ne 1 ]; then
+    echo "usage: xdg-open { file | URL }" >&2
+    exit 1
+fi
+target=$1
+
+# A local path must be visible on the host too, by the same absolute path
+# (the host's cwd may differ). Toolbox and distrobox mount the host at
+# /run/host, which lets us check.
+if [ -e "$target" ]; then
+    target=$(realpath "$target")
+    if [ -d /run/host ] && [ ! -e "/run/host$target" ]; then
+        echo "xdg-open: $1 exists only inside the container, the host can't open it" >&2
+        exit 1
+    fi
+fi
+
+if command -v flatpak-spawn >/dev/null 2>&1; then
+    exec flatpak-spawn --host xdg-open "$target"         # toolbox
+elif command -v distrobox-host-exec >/dev/null 2>&1; then
+    exec distrobox-host-exec xdg-open "$target"
+elif command -v host-spawn >/dev/null 2>&1; then
+    exec host-spawn xdg-open "$target"
+fi
+echo "xdg-open: no way to reach the host (flatpak-spawn, distrobox-host-exec or host-spawn)" >&2
+exit 127

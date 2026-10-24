@@ -1,0 +1,58 @@
+# Same remote as the controller's clone of this repo
+dotfiles_repo: "{{ lookup('ansible.builtin.pipe', 'git -C ' ~ playbook_dir ~ '/.. remote get-url origin') }}"
+dotfiles_dest: "{{ ansible_facts.env.HOME }}/.dotfiles"
+# Root/admin on the host? false = home-directory installs only (set per host)
+dotfiles_root: true
+# Make Homebrew/pkg bash the login shell (macOS and FreeBSD default to zsh/sh)
+dotfiles_bash_login_shell: true
+
+# Package names per OS family (ansible_facts.os_family)
+dotfiles_packages:
+  RedHat:
+    - bash-completion
+    - fd-find
+    - fzf
+    - git
+    - gitleaks
+    - neovim
+    - ranger
+    - ripgrep
+    - ShellCheck
+    - tmux
+    - uv
+    - vim-enhanced
+    - zoxide
+  FreeBSD:
+    - bash
+    - bash-completion
+    - fd-find
+    - fzf
+    - git
+    - gitleaks
+    - hs-ShellCheck
+    - neovim
+    - py311-ranger
+    - ripgrep
+    - tmux
+    - uv
+    - vim
+    - zoxide
+  Darwin:
+    - bash
+    - bash-completion@2
+    - fd
+    - fzf
+    - git
+    - gitleaks
+    - neovim
+    - ranger
+    - ripgrep
+    - shellcheck
+    - tmux
+    - uv
+    - vim
+    - zoxide
+
+dotfiles_bash_path:
+  FreeBSD: /usr/local/bin/bash
+  Darwin: "{{ '/opt/homebrew/bin/bash' if ansible_facts.architecture == 'arm64' else '/usr/local/bin/bash' }}"

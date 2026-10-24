@@ -1,0 +1,22 @@
+# Linux only: desktop/toolbox helpers.
+
+- defaults:
+    link:
+      create: true
+      relink: true
+
+- link:
+    ~/.local/bin/:
+        glob: true
+        path: bin-linux/*
+
+    ~/.local/bin/toolbox-vscode: ext/toolbox-vscode/code.sh
+    ~/.local/bin/podman-host: ext/toolbox-vscode/podman-host.sh
+
+    #~/.xprofile: xprofile
+
+    # XDG user dirs pointing at short home directories. Enable once ~/inbox,
+    # ~/img and ~/media/video exist; force replaces the generated files.
+    #~/.config/user-dirs.dirs: {path: xdg/user-dirs.dirs, force: true}
+    #~/.config/user-dirs.conf: {path: xdg/user-dirs.conf, force: true}
+    #~/.config/user-dirs.locale: {path: xdg/user-dirs.locale, force: true}

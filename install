@@ -3,6 +3,8 @@
 set -e
 
 CONFIG="install.conf.yaml"
+# linux, darwin, freebsd
+OS_CONFIG="install.$(uname -s | tr '[:upper:]' '[:lower:]').yaml"
 
 DOTBOT_DIR="ext/dotbot"
 
@@ -14,4 +16,6 @@ git -C "${DOTBOT_DIR}" submodule sync --quiet --recursive
 git submodule update --init --recursive "${DOTBOT_DIR}"
 
 "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${CONFIG}" "${@}"
-
+if [ -f "${OS_CONFIG}" ]; then
+    "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${OS_CONFIG}" "${@}"
+fi

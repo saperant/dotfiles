@@ -1,164 +1,178 @@
-# ~/.bashrc: executed by bash(1) for non-login shells.
+# ~/.bashrc: interactive bash on Linux, macOS and FreeBSD.
+#
+# Kept compatible with bash 3.2 (macOS /bin/bash); newer features are guarded.
+# Machine-specific additions go to ~/.bashrc.d/*, which is not tracked.
 
-#source /etc/environment
+# non-interactive shells (scp, rsync, bash -c) need nothing from here
+case $- in
+    *i*) ;;
+    *) return ;;
+esac
 
-# use system bashrc as basis
+# readline config lives under XDG; set before anything initializes readline
+export INPUTRC="${XDG_CONFIG_HOME:-$HOME/.config}/readline/inputrc"
+
+# System defaults first. Fedora's /etc/bashrc loads /etc/profile.d (colors,
+# completion, vte, toolbox); macOS /etc/profile already sources /etc/bashrc
+# for login shells; Debian's bash reads /etc/bash.bashrc by itself.
 if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
+    case $OSTYPE in
+        darwin*) shopt -q login_shell || . /etc/bashrc ;;
+        *) . /etc/bashrc ;;
+    esac
 fi
 
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
+#---------
+# History
+#---------
+HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/bash/history"
+[ -d "${HISTFILE%/*}" ] || mkdir -p "${HISTFILE%/*}"
+HISTSIZE=100000
+HISTFILESIZE=200000
 HISTCONTROL=ignoreboth
+HISTIGNORE='ls:ll:la:l:bg:fg:history:clear:exit'
+HISTTIMEFORMAT='%F %T  '
+shopt -s histappend cmdhist
+# (the prompt runs `history -a` so parallel shells don't lose history)
 
-# append to the history file, don't overwrite it
-shopt -s histappend
-
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
-
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
+#----------------
+# Shell options
+#----------------
 shopt -s checkwinsize
+shopt -s globstar checkjobs 2>/dev/null  # bash 4+
 
-# comment?
-shopt -s expand_aliases
-
-# make less more friendly for non-text input files, see lesspipe(1)
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
-
-# set variable identifying the chroot you work in (used in the prompt below)
-if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
-fi
-
-# set a fancy prompt (non-color, unless we know we "want" color)
-case "$TERM" in
-    xterm-color|*-256color|rxvt|screen|xterm-kitty) color_prompt=yes;;
+#--------------------
+# Colors and aliases
+#--------------------
+case $OSTYPE in
+    darwin*|freebsd*)
+        export CLICOLOR=1  # BSD ls
+        ;;
+    *)
+        alias ls='ls --color=auto'
+        # Fedora's profile.d already sets LS_COLORS
+        if [ -z "$LS_COLORS" ] && command -v dircolors >/dev/null 2>&1; then
+            if [ -r ~/.dircolors ]; then
+                eval "$(dircolors -b ~/.dircolors)"
+            else
+                eval "$(dircolors -b)"
+            fi
+        fi
+        ;;
 esac
+alias grep='grep --color=auto'
 
-# uncomment for a colored prompt, if the terminal has the capability; turned
-# off by default to not distract the user: the focus in a terminal window
-# should be on the output of commands, not on the prompt
-#force_color_prompt=yes
-
-if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
-	color_prompt=yes
-    else
-	color_prompt=
-    fi
-fi
-
-if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-    #command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
-else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-fi
-unset color_prompt force_color_prompt
-
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
-
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-# colored GCC warnings and errors
-#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-
-# some more ls aliases
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+alias more=less
+
+# make less more friendly for non-text input files (Debian; Fedora sets
+# LESSOPEN in profile.d)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-
-# sane defaults
-alias more=less
+if command -v notify-send >/dev/null 2>&1; then
+    alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+fi
 
 # helpers
 alias path='echo -e ${PATH//:/\\n}'
 alias pathadd='export PATH="${PATH}:${PWD}"'
-alias tmux="tmux -2"
-
-# Alias definitions.
-# You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
 export RANGER_LOAD_DEFAULT_RC=FALSE
+# cht.sh keeps its config, cookie and history here instead of ~/.cht.sh
+export CHTSH="${XDG_CONFIG_HOME:-$HOME/.config}/cht.sh"
 
-# use neovim instead of vim if available
-if command -v nvim &> /dev/null
-then
+# use neovim instead of vim if available (EDITOR is set in ~/.profile)
+if command -v nvim >/dev/null 2>&1; then
     alias vi="nvim"
     alias vim="nvim"
-    export VISUAL="nvim"
-    export EDITOR="nvim -e"
+fi
+
+#------------
+# Completion
+#------------
+# Fedora loads bash-completion from profile.d; elsewhere find it ourselves.
+# bash-completion 2 needs bash 4.2+.
+if [ -z "$BASH_COMPLETION_VERSINFO" ] && ! shopt -oq posix &&
+    [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
+    for f in \
+        /usr/share/bash-completion/bash_completion \
+        /usr/local/share/bash-completion/bash_completion.sh \
+        "${HOMEBREW_PREFIX:-/opt/homebrew}/etc/profile.d/bash_completion.sh" \
+        /etc/bash_completion
+    do
+        if [ -r "$f" ]; then
+            . "$f"
+            break
+        fi
+    done
+    unset f
+fi
+
+#-------
+# Tools
+#-------
+# fzf: key bindings (Ctrl-T, Ctrl-R, Alt-C) and completion. fzf 0.48+ prints
+# its own setup; older packages ship the scripts.
+if command -v fzf >/dev/null 2>&1; then
+    if __fzf_init=$(fzf --bash 2>/dev/null); then
+        eval "$__fzf_init"
+    else
+        for f in \
+            /usr/share/fzf/shell/key-bindings.bash \
+            /usr/share/doc/fzf/examples/key-bindings.bash \
+            /usr/local/share/examples/fzf/shell/key-bindings.bash
+        do
+            if [ -r "$f" ]; then
+                . "$f"
+                break
+            fi
+        done
+        unset f
+    fi
+    unset __fzf_init
+
+    if command -v fd >/dev/null 2>&1; then
+        export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
+        export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    fi
+
+    # Ctrl-P: pick files with fzf and open them in the editor
+    __fzf_edit() {
+        local files=() f
+        while IFS= read -r f; do
+            files+=("$f")
+        done < <(fzf --multi)
+        [ ${#files[@]} -gt 0 ] && "${VISUAL:-vi}" "${files[@]}"
+    }
+    bind -m vi-insert -x '"\C-p": __fzf_edit'
+    bind -m vi-command -x '"\C-p": __fzf_edit'
+    bind -m emacs -x '"\C-p": __fzf_edit'
+fi
+
+# directory jumping: zoxide if installed, otherwise z.sh
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init bash)"
 else
-    export VISUAL="vim"
-    export EDITOR="vim -e"
+    for f in /usr/libexec/z.sh "${HOMEBREW_PREFIX:-/opt/homebrew}/etc/profile.d/z.sh"; do
+        if [ -r "$f" ]; then
+            . "$f"
+            break
+        fi
+    done
+    unset f
 fi
 
-# use vim as default editor and (and bindings for bash)
-set -o vi
-
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
-
-# for fuzzy finder
-if [ -f ~/.fzf.bash ]
-then
-    source ~/.fzf.bash
-    #export FZF_DEFAULT_COMMAND='rg --files --no-ignore --hidden --follow -g"!{.git,node_modules}/*" 2>/dev/null'
-    #export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-    bind -x '"\C-p": vim $(fzf);'
-fi
-
-# for z
-if [ -f /usr/libexec/z.sh ]; then
-    . /usr/libexec/z.sh
-fi
-
-# Export 'SHELL' to child processes.  Programs such as 'screen'
-# honor it and otherwise use /bin/sh.
-export SHELL
-
-# User specific aliases and functions
+#--------------------------------------
+# Local additions (machine specific)
+#--------------------------------------
 if [ -d ~/.bashrc.d ]; then
     for rc in ~/.bashrc.d/*; do
         if [ -f "$rc" ]; then
@@ -184,3 +198,7 @@ unset rc
 #    exec dbus-launch --exit-with-session sway
 #fi
 
+# Prompt last: it wraps PROMPT_COMMAND and must see everything added above
+if [ -r "${XDG_CONFIG_HOME:-$HOME/.config}/bash/prompt.bash" ]; then
+    . "${XDG_CONFIG_HOME:-$HOME/.config}/bash/prompt.bash"
+fi

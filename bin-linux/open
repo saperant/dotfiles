@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# open: like macOS open(1). Opens any number of files, directories or URLs
+# with their default applications, detached from the terminal; with no
+# arguments, the current directory. Goes through xdg-open, so it also works
+# inside toolbox/distrobox containers (see the xdg-open wrapper).
+
+[ $# -gt 0 ] || set -- .
+
+status=0
+for target; do
+    if [ ! -e "$target" ]; then
+        case $target in
+            [A-Za-z]*:*) ;;  # URL (http:, mailto:, file:, ...)
+            *)
+                echo "open: $target: no such file or directory" >&2
+                status=1
+                continue
+                ;;
+        esac
+    fi
+    # setsid: the application outlives the terminal and keeps its noise to itself
+    setsid -f xdg-open "$target" </dev/null >/dev/null 2>&1 || status=1
+done
+exit $status

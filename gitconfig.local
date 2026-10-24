@@ -1,0 +1,21 @@
+# ~/.gitconfig: machine-specific git settings. Copied once by ./install.
+#
+# Shared settings come from ~/.config/git/config (the dotfiles repo); this
+# file is read after it and wins. Keep `git config --global` writes here:
+# git only falls back to the XDG file when ~/.gitconfig is missing.
+
+[user]
+    name =
+    email =
+
+# Sign commits with an SSH key:
+#[user]
+#    signingKey = ~/.ssh/id_ed25519.pub
+#[gpg]
+#    format = ssh
+#[commit]
+#    gpgSign = true
+
+# Credentials: libsecret on Linux, osxkeychain on macOS
+#[credential]
+#    helper = libsecret

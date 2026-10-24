@@ -1,13 +1,36 @@
+# Common to all platforms. ./install also applies install.<os>.yaml
+# (linux, darwin, freebsd) when it exists.
+
+- defaults:
+    link:
+      create: true
+      relink: true
+
 - clean:
     - '~'
     - ~/.config
+    - ~/.local/bin
     - ~/.ssh
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules.]
-    - [mkdir -p ~/bin ~/src ~/.config ~/.ssh ~/.gitfiles ~/.local ~/.bashrc.d, Creating dirs.]
-    - [test -f ~/.gitconfig || cp gitconfig ~/.gitconfig]
-    - [test -f ~/.ssh/config || cp sshconfig ~/.ssh/config]
+    - [mkdir -p ~/.config ~/.ssh ~/.local/bin ~/.local/state/bash ~/.bashrc.d && chmod 700 ~/.ssh, Creating dirs.]
+    - [test -f ~/.gitconfig || cp gitconfig.local ~/.gitconfig, Creating ~/.gitconfig from template.]
+    - [test -f ~/.ssh/config || cp sshconfig ~/.ssh/config, Creating ~/.ssh/config from template.]
+    - [git config core.hooksPath .githooks, Enabling repository hooks.]
+    -
+      description: Migrating from older layouts.
+      command: |
+        # history moved to ~/.local/state/bash/history
+        if [ -f ~/.bash_history ]; then
+            cat ~/.bash_history >> ~/.local/state/bash/history && rm ~/.bash_history
+        fi
+        # scripts moved from ~/bin to ~/.local/bin, git files to ~/.config/git
+        for d in ~/bin ~/.gitfiles; do
+            [ -d "$d" ] && find "$d" -maxdepth 1 -type l -lname "$PWD/*" -exec rm {} +
+        done
+        rmdir ~/.gitfiles 2>/dev/null
+        true
 
 - link:
     ~/.profile: profile
@@ -15,41 +38,42 @@
     ~/.bashrc: bashrc
     ~/.bash_logout: bash_logout
 
-    ~/bin/toolbox-vscode: ext/toolbox-vscode/code.sh
-    ~/bin/podman-host: ext/toolbox-vscode/podman-host.sh
-    ~/bin/open: ~/bin/xdg-open
-
-    #~/.xinitrc: xsession
-    #~/.xsession: xsession
-    #~/.xprofile: xprofile
-
-    #~/.screenrc: screenrc
     ~/.tmux.conf: tmux.conf
 
     ~/.vimrc: vim/vimrc
-    ~/.vim:
-        path: vim/
-        create: true
-
-    #~/.ssh/config: sshconfig # copy template instead
-
-    #~/.gitconfig: gitconfig # copy template instead
-    ~/.gitfiles/:
-        glob: true
-        path: gitfiles/*
-        relink: true
-
-    ~/.fzf:
-        path: ext/fzf/
-        create: true
+    ~/.vim: vim/
 
     ~/.config/:
         glob: true
         path: config/*
-        relink: true
 
-    ~/bin/:
+    ~/.local/bin/:
         glob: true
         path: bin/*
-        relink: true
 
+# Everything below works without root: tools from the system are preferred,
+# otherwise they are fetched into ~/.local.
+- shell:
+    -
+      description: Installing fzf (if the system has none).
+      stdout: true
+      stderr: true
+      command: |
+        if ! command -v fzf >/dev/null 2>&1 || [ "$(command -v fzf)" = "$HOME/.local/bin/fzf" ]; then
+            ext/fzf/install --bin >/dev/null &&
+                ln -sf "$PWD/ext/fzf/bin/fzf" ~/.local/bin/fzf &&
+                echo "fzf $(ext/fzf/bin/fzf --version) -> ~/.local/bin/fzf"
+        fi
+    -
+      description: Installing mytools.
+      stdout: true
+      stderr: true
+      command: |
+        if command -v uv >/dev/null 2>&1; then
+            uv tool install --quiet --editable ./mytools
+        else
+            # no uv: run straight from the source tree (stdlib only)
+            printf '#!/bin/sh\nPYTHONPATH="%s/mytools/src${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m mytools "$@"\n' "$PWD" > ~/.local/bin/mytools
+            chmod +x ~/.local/bin/mytools
+            echo "uv not found, mytools runs from source"
+        fi

@@ -1,0 +1,2 @@
+# Dotfiles source files from paths that vary per OS and machine
+disable=SC1090,SC1091

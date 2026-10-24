@@ -1,27 +1,207 @@
-#!/bin/bash
-while [[ $# -gt 0 ]] ; do
-    if [ -f $1 ] ; then
-        case $1 in
-            *.tar.bz2)   tar xjf $1   ;;
-            *.tar.gz)    tar xzf $1   ;;
-            *.bz2)       bunzip2 $1   ;;
-            *.rar)       unrar x $1   ;;
-            *.gz)        gunzip $1    ;;
-            *.tar)       tar xf $1    ;;
-            *.tbz2)      tar xjf $1   ;;
-            *.tgz)       tar xzf $1   ;;
-            *.zip)       unzip $1     ;;
-            *.jar)       unzip $1     ;;
-            *.war)       unzip $1     ;;
-            *.Z)         uncompress $1;;
-            *.7z)        7z x $1      ;;
-            *.xz)        xz -d $1     ;;
-            *.lz4)       lz4 -d $1    ;;
-            *)           echo "'$1' cannot be extracted with ex" ;;
-        esac
-    else
-        echo "'$1' is not a valid file"
-    fi
-    shift
-done
+#!/usr/bin/env bash
+# ex: extract archives, safely.
+#
+#   ex archive...       extract
+#   ex -l archive...    list contents
+#
+# An archive with a single top-level entry is extracted right here; anything
+# else goes into a new directory named after the archive. Nothing existing is
+# ever overwritten, and tarbombs stay contained. Compressed single files
+# (.gz, .xz, .zst, ...) are decompressed next to the original, which is kept.
+#
+# Uses whatever is installed: the format's own tool first, then bsdtar
+# (libarchive, the system tar on macOS and FreeBSD), then 7-Zip.
 
+prog=${0##*/}
+
+err() { echo "$prog: $*" >&2; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+usage() {
+    sed -n '2,/^$/{s/^# \{0,1\}//;p;}' "$0"
+}
+
+# libarchive's tar reads zip, rar, 7z, iso, cpio, rpm, deb, xar...
+bsdtar_cmd() {
+    if have bsdtar; then
+        echo bsdtar
+    elif tar --version 2>/dev/null | grep -q bsdtar; then
+        echo tar
+    else
+        return 1
+    fi
+}
+
+sevenzip_cmd() {
+    local c
+    for c in 7z 7zz 7za; do
+        have "$c" && { echo "$c"; return; }
+    done
+    return 1
+}
+
+# Formats the dedicated tools don't cover (or aren't installed for)
+generic() {  # mode file
+    local bsd sz
+    if bsd=$(bsdtar_cmd); then
+        "$bsd" "-${1}f" "$2"
+    elif sz=$(sevenzip_cmd); then
+        if [ "$1" = x ]; then "$sz" x -bd -y "$2" >/dev/null; else "$sz" l "$2"; fi
+    else
+        err "no tool for ${2##*/}: install bsdtar (libarchive) or 7-Zip"
+        return 127
+    fi
+}
+
+# Unpack or list a multi-file archive into the current directory
+unpack() {  # mode(x|t) file
+    local mode=$1 f=$2 sz
+    case $f in
+        *.tar|*.tar.*|*.tgz|*.tbz|*.tbz2|*.txz|*.tzst|*.tlz)
+            tar "-${mode}f" "$f" ;;   # GNU tar and bsdtar detect compression
+        *.zip|*.jar|*.war|*.ear|*.apk|*.whl|*.epub|*.cbz|*.xpi)
+            if have unzip; then
+                if [ "$mode" = x ]; then unzip -q "$f"; else unzip -l "$f"; fi
+            else
+                generic "$mode" "$f"
+            fi ;;
+        *.rar|*.cbr)
+            if have unrar; then
+                if [ "$mode" = x ]; then unrar x -idq "$f"; else unrar l "$f"; fi
+            else
+                generic "$mode" "$f"
+            fi ;;
+        *.7z)
+            if sz=$(sevenzip_cmd); then
+                if [ "$mode" = x ]; then "$sz" x -bd -y "$f" >/dev/null; else "$sz" l "$f"; fi
+            else
+                generic "$mode" "$f"
+            fi ;;
+        *.deb)
+            if have ar; then ar "$mode" "$f"; else generic "$mode" "$f"; fi ;;
+        *.rpm)
+            if have rpm2cpio && have cpio; then
+                if [ "$mode" = x ]; then
+                    rpm2cpio "$f" | cpio -idm --quiet
+                else
+                    rpm2cpio "$f" | cpio -t --quiet
+                fi
+            else
+                generic "$mode" "$f"
+            fi ;;
+        *.zpaq)
+            if [ "$mode" = x ]; then zpaq x "$f"; else zpaq l "$f"; fi ;;
+        *)  # iso, cpio, xar, pkg, ...
+            generic "$mode" "$f" ;;
+    esac
+}
+
+# Single compressed file: tool to decompress it, or nothing if it's an archive
+decompressor() {
+    case $1 in
+        *.tar.*) return 1 ;;
+        *.gz|*.Z) echo gzip ;;   # gzip also reads compress(1) files
+        *.bz2) echo bzip2 ;;
+        *.xz|*.lzma) echo xz ;;
+        *.zst) echo zstd ;;
+        *.lz4) echo lz4 ;;
+        *.lz) echo lzip ;;
+        *) return 1 ;;
+    esac
+}
+
+decompress() {  # file tool
+    local f=$1 tool=$2 out
+    out=${f##*/}
+    out=${out%.*}
+    if [ -e "$out" ]; then
+        err "${f##*/}: $out already exists, skipping"
+        return 1
+    fi
+    have "$tool" || { err "${f##*/}: $tool is not installed"; return 127; }
+    if ! "$tool" -dc "$f" > "$out"; then
+        rm -f "$out"
+        return 1
+    fi
+    echo "${f##*/} -> $out"
+}
+
+extract() {  # file (absolute)
+    local f=$1 name tmp dest top n entries
+    name=${f##*/}
+    name=${name%.*}
+    name=${name%.tar}
+
+    tmp=$(mktemp -d "./.ex-XXXXXX") || return 1
+    if ! (cd "$tmp" && unpack x "$f"); then
+        rm -rf "$tmp"
+        err "${f##*/}: extraction failed"
+        return 1
+    fi
+
+    entries=()
+    shopt -s nullglob dotglob
+    entries=("$tmp"/*)
+    shopt -u nullglob dotglob
+
+    if [ ${#entries[@]} -eq 0 ]; then
+        rmdir "$tmp"
+        err "${f##*/}: archive is empty"
+        return 1
+    fi
+    if [ ${#entries[@]} -eq 1 ]; then
+        top=${entries[0]##*/}
+        if [ ! -e "$top" ] && [ ! -L "$top" ]; then
+            mv "${entries[0]}" "$top" && rmdir "$tmp"
+            echo "${f##*/} -> $top"
+            return
+        fi
+    fi
+
+    # several entries (or the single name is taken): a directory of its own
+    dest=$name n=1
+    while [ -e "$dest" ] || [ -L "$dest" ]; do
+        dest="$name-$n" n=$((n + 1))
+    done
+    chmod "$(printf '%o' $((0777 & ~0$(umask))))" "$tmp"  # mktemp made it 0700
+    mv "$tmp" "$dest"
+    echo "${f##*/} -> $dest/"
+}
+
+mode=x
+while getopts lh opt; do
+    case $opt in
+        l) mode=t ;;
+        h) usage; exit 0 ;;
+        *) usage >&2; exit 2 ;;
+    esac
+done
+shift $((OPTIND - 1))
+[ $# -gt 0 ] || { usage >&2; exit 2; }
+
+status=0
+for arg; do
+    if [ ! -f "$arg" ]; then
+        err "$arg: no such file"
+        status=1
+        continue
+    fi
+    case $arg in
+        /*) f=$arg ;;
+        *) f=$PWD/$arg ;;
+    esac
+
+    if tool=$(decompressor "$f"); then
+        if [ "$mode" = t ]; then
+            out=${f##*/}
+            echo "$arg: compressed file, decompresses to ${out%.*}"
+        else
+            decompress "$f" "$tool" || status=1
+        fi
+    elif [ "$mode" = t ]; then
+        unpack t "$f" || status=1
+    else
+        extract "$f" || status=1
+    fi
+done
+exit $status

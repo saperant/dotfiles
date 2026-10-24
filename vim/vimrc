@@ -11,7 +11,8 @@ call plug#begin('~/.vim/plugged')
 Plug 'scrooloose/nerdtree'
 Plug 'tpope/vim-fugitive'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-Plug '~/.fzf'
+" fzf's vim plugin; the fzf binary itself comes from the system package
+Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'christoomey/vim-tmux-navigator'
 "Plug 'dmerejkowsky/vim-ale'

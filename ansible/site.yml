@@ -1,0 +1,79 @@
+# Install packages and dotfiles on every host in the inventory.
+#
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-playbook site.yml                  # all hosts
+#   ansible-playbook site.yml -l macbook.lan   # one host
+#   ansible-playbook site.yml --tags dotfiles  # skip packages
+#
+# Hosts with dotfiles_root=false (no root/admin) get no packages and no
+# login-shell change; uv is fetched into ~/.local/bin instead, and ./install
+# fetches fzf itself. macOS needs Homebrew installed first (https://brew.sh).
+
+- name: Dotfiles
+  hosts: all
+  vars:
+    packages: "{{ dotfiles_packages[ansible_facts.os_family] | default([]) }}"
+    bash_path: "{{ dotfiles_bash_path[ansible_facts.os_family] | default('') }}"
+
+  tasks:
+    - name: System packages and login shell
+      when: dotfiles_root | bool
+      tags: packages
+      block:
+        - name: Install packages (Fedora)
+          when: ansible_facts.os_family == 'RedHat'
+          become: true
+          ansible.builtin.dnf:
+            name: "{{ packages }}"
+            state: present
+
+        - name: Install packages (FreeBSD)
+          when: ansible_facts.os_family == 'FreeBSD'
+          become: true
+          community.general.pkgng:
+            name: "{{ packages }}"
+            state: present
+
+        - name: Install packages (macOS)
+          when: ansible_facts.os_family == 'Darwin'
+          community.general.homebrew:
+            name: "{{ packages }}"
+            state: present
+
+        - name: Allow bash in /etc/shells
+          when: dotfiles_bash_login_shell and bash_path != ''
+          become: true
+          ansible.builtin.lineinfile:
+            path: /etc/shells
+            line: "{{ bash_path }}"
+
+        - name: Set login shell
+          when: dotfiles_bash_login_shell and bash_path != ''
+          become: true
+          ansible.builtin.user:
+            name: "{{ ansible_facts.user_id }}"
+            shell: "{{ bash_path }}"
+
+    - name: Install uv into ~/.local/bin (no root)
+      when: not (dotfiles_root | bool)
+      ansible.builtin.shell:
+        cmd: curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
+        creates: "{{ ansible_facts.env.HOME }}/.local/bin/uv"
+      tags: packages
+
+    - name: Clone or update the dotfiles
+      ansible.builtin.git:
+        repo: "{{ dotfiles_repo }}"
+        dest: "{{ dotfiles_dest }}"
+        update: true   # fails instead of clobbering local changes
+      tags: dotfiles
+
+    - name: Run ./install
+      ansible.builtin.command:
+        cmd: ./install
+        chdir: "{{ dotfiles_dest }}"
+      environment:
+        PATH: "{{ ansible_facts.env.HOME }}/.local/bin:{{ ansible_facts.env.PATH }}"
+      register: install
+      changed_when: "'Creating link' in install.stdout or 'Removing' in install.stdout"
+      tags: dotfiles

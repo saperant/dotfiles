@@ -1,0 +1,14 @@
+# XDG user dirs: a pointer table for applications onto a short, flat home
+# tree. Unfiled app output is incoming by definition, so it lands in the inbox.
+#
+# Linked from install.linux.yaml. Never regenerated: user-dirs.conf turns
+# xdg-user-dirs-update off (it would reset missing dirs and write into the repo).
+XDG_DESKTOP_DIR="$HOME/inbox"
+XDG_DOWNLOAD_DIR="$HOME/inbox"
+XDG_DOCUMENTS_DIR="$HOME/inbox"
+XDG_PICTURES_DIR="$HOME/img"
+XDG_MUSIC_DIR="$HOME/music"
+XDG_VIDEOS_DIR="$HOME/media/video"
+# no role in the tree: $HOME means "disabled"
+XDG_TEMPLATES_DIR="$HOME/"
+XDG_PUBLICSHARE_DIR="$HOME/"

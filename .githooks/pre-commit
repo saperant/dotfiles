@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Refuse commits that leak secrets or add shell script bugs.
+# Enabled by ./install (git config core.hooksPath .githooks).
+# Bypass in an emergency with: git commit --no-verify
+
+fail=0
+
+# Secrets in the staged changes
+if command -v gitleaks >/dev/null 2>&1; then
+    if gitleaks git --help >/dev/null 2>&1; then
+        gitleaks git --pre-commit --staged --redact --no-banner || fail=1
+    else
+        gitleaks protect --staged --redact --no-banner || fail=1  # gitleaks < 8.19
+    fi
+else
+    echo "pre-commit: gitleaks not installed, secrets NOT checked" >&2
+fi
+
+# Shell scripts among the staged files (third-party code excluded).
+# Without a shellcheck package, uv can run it from PyPI (no root needed).
+if command -v shellcheck >/dev/null 2>&1; then
+    shellcheck=(shellcheck)
+elif command -v uv >/dev/null 2>&1; then
+    shellcheck=(uv tool run --quiet --from shellcheck-py shellcheck)
+fi
+if [ -n "${shellcheck[*]}" ]; then
+    while IFS= read -r -d '' f; do
+        case $f in
+            ext/*|archive/*|vim/*|config/ranger/plugins/*|bin/cht.sh) continue ;;  # vendored
+            profile) shell='sh' ;;
+            bashrc|bash_profile|bash_logout|*.bash) shell=bash ;;
+            *.sh) shell= ;;
+            *)
+                case $(head -n1 "$f" 2>/dev/null) in
+                    '#!'*sh*) shell= ;;
+                    *) continue ;;
+                esac
+                ;;
+        esac
+        "${shellcheck[@]}" --severity=warning ${shell:+--shell=$shell} "$f" || fail=1
+    done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+else
+    echo "pre-commit: shellcheck not installed, scripts NOT checked" >&2
+fi
+
+exit $fail

@@ -4,9 +4,9 @@
 [submodule "ext/toolbox-vscode"]
 	path = ext/toolbox-vscode
 	url = https://github.com/owtaylor/toolbox-vscode.git
-[submodule "ext/fzf"]
-	path = ext/fzf
-	url = https://github.com/junegunn/fzf
 [submodule "ext/dotbot"]
 	path = ext/dotbot
 	url = https://github.com/anishathalye/dotbot
+[submodule "ext/fzf"]
+	path = ext/fzf
+	url = https://github.com/junegunn/fzf

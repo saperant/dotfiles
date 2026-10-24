@@ -1,0 +1,50 @@
+# ~/.config/readline/inputrc (found via $INPUTRC, set in ~/.bashrc)
+# Applies to bash and every other readline program.
+
+# Setting INPUTRC skips the system file, so pull it in (Linux has one,
+# macOS and FreeBSD don't; a missing include is ignored)
+$include /etc/inputrc
+
+set editing-mode vi
+# Esc switches to command mode without the default half-second wait
+set keyseq-timeout 50
+
+# Show vi mode as the cursor shape: bar while inserting, block in command mode
+$if term=linux
+$else
+set show-mode-in-prompt on
+set vi-ins-mode-string \1\e[6 q\2
+set vi-cmd-mode-string \1\e[2 q\2
+$endif
+
+# Completion
+set completion-ignore-case on
+set completion-map-case on
+set show-all-if-ambiguous on
+set mark-symlinked-directories on
+set colored-stats on
+set colored-completion-prefix on
+set skip-completed-text on
+set bell-style none
+
+set enable-bracketed-paste on
+
+# Up/Down search history for what is already typed
+set keymap vi-insert
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+"\eOA": history-search-backward
+"\eOB": history-search-forward
+"\C-l": clear-screen
+
+set keymap vi-command
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+"\eOA": history-search-backward
+"\eOB": history-search-forward
+
+$if Bash
+set keymap vi-insert
+# !!, !$ etc. are expanded when you press space
+Space: magic-space
+$endif
