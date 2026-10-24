@@ -39,6 +39,12 @@ system has and skips the rest. `install` fills the important gaps in
 - mytools: `uv tool install`, or run from the source tree when uv is missing
 - shellcheck in the commit hook: run through `uv` when not installed
 
+- fonts: `nerdfont` installs the Nerd Fonts symbols into the user font
+  directory, which ranger's devicons, vim and the prompt need for icons. It
+  works as a fontconfig fallback, so the terminal font stays as it is
+  (`nerdfont check` verifies; `nerdfont install JetBrainsMono` and
+  `nerdfont terminal` cover terminals without font fallback)
+
 uv itself installs without root:
 `curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh`.
 

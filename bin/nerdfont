@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# nerdfont: install Nerd Fonts for the current user (no root) and set up the
+# terminal, so icons in ranger (devicons), the prompt and vim render.
+#
+#   nerdfont                     install the symbols font, then check
+#   nerdfont install [NAME]      install a font from the Nerd Fonts release;
+#                                default NerdFontsSymbolsOnly, or e.g.
+#                                JetBrainsMono, FiraCode, Hack, Meslo
+#   nerdfont check               show whether icons can render
+#   nerdfont terminal FAMILY [SIZE]
+#                                use FAMILY in the terminal (Ptyxis, GNOME
+#                                Terminal) or show how to set it
+#
+# The symbols-only font is usually all you need: fontconfig uses it as a
+# fallback for icon glyphs, so your terminal font stays as it is. Kitty,
+# Ghostty and WezTerm have the symbols built in already. A full patched
+# font (JetBrainsMono, ...) is for terminals without font fallback.
+#
+# Downloads are verified against the release's SHA-256 list.
+# NERDFONT_VERSION=v3.4.0 pins a release (default: latest).
+
+set -u
+prog=${0##*/}
+repo=https://github.com/ryanoasis/nerd-fonts
+
+err() { echo "$prog: $*" >&2; }
+die() { err "$*"; exit 1; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+usage() {
+    sed -n '2,/^$/{s/^# \{0,1\}//;p;}' "$0"
+}
+
+case $(uname -s) in
+    Darwin) os=mac font_root="$HOME/Library/Fonts" ;;
+    *) os=unix font_root="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/NerdFonts" ;;
+esac
+fc_conf_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fontconfig/conf.d"
+
+download() {  # url file
+    if have curl; then
+        curl -fsSL -o "$2" "$1"
+    elif have wget; then
+        wget -q -O "$2" "$1"
+    elif have fetch; then
+        fetch -q -o "$2" "$1"   # FreeBSD base
+    else
+        die "need curl, wget or fetch to download"
+    fi
+}
+
+sha256() {
+    if have sha256sum; then
+        sha256sum "$1" | cut -d' ' -f1
+    elif have shasum; then
+        shasum -a 256 "$1" | cut -d' ' -f1
+    elif have sha256; then
+        sha256 -q "$1"          # FreeBSD base
+    else
+        die "need sha256sum, shasum or sha256 to verify downloads"
+    fi
+}
+
+# Release tag, so the archive and its checksum come from the same release
+release() {
+    local url
+    if [ -n "${NERDFONT_VERSION:-}" ]; then
+        echo "$NERDFONT_VERSION"
+        return
+    fi
+    have curl || { echo latest; return; }
+    url=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$repo/releases/latest") || return 1
+    echo "${url##*/}"
+}
+
+cmd_install() {
+    local name=${1:-NerdFontsSymbolsOnly} tag base want got dest
+    tag=$(release) || die "cannot reach GitHub"
+    if [ "$tag" = latest ]; then
+        base="$repo/releases/latest/download"
+    else
+        base="$repo/releases/download/$tag"
+    fi
+
+    tmp=$(mktemp -d) || exit 1
+    trap 'rm -rf "${tmp:-}"' EXIT   # global: the trap runs after we return
+
+    echo "Downloading $name ($tag)..."
+    download "$base/SHA-256.txt" "$tmp/SHA-256.txt" || die "cannot download the checksum list"
+    want=$(awk -v f="$name.tar.xz" '$2 == f { print $1 }' "$tmp/SHA-256.txt")
+    [ -n "$want" ] || die "no font called '$name' in release $tag (names: $repo/releases)"
+    download "$base/$name.tar.xz" "$tmp/font.tar.xz" || die "download failed"
+    got=$(sha256 "$tmp/font.tar.xz")
+    [ "$got" = "$want" ] || die "checksum mismatch for $name.tar.xz, not installing"
+
+    mkdir -p "$tmp/x" && tar -xJf "$tmp/font.tar.xz" -C "$tmp/x" || die "cannot unpack (is xz installed?)"
+
+    if [ "$os" = mac ]; then
+        dest=$font_root   # macOS only looks at the top level
+        mkdir -p "$dest"
+        find "$tmp/x" -type f \( -name '*.ttf' -o -name '*.otf' \) -exec cp {} "$dest/" \;
+    else
+        dest="$font_root/$name"
+        rm -rf "$dest"
+        mkdir -p "$dest"
+        find "$tmp/x" -type f \( -name '*.ttf' -o -name '*.otf' -o -name 'LICENSE*' \) -exec cp {} "$dest/" \;
+        # the symbols font ships a rule that makes it the icon fallback
+        if [ -f "$tmp/x/10-nerd-font-symbols.conf" ]; then
+            mkdir -p "$fc_conf_dir"
+            cp "$tmp/x/10-nerd-font-symbols.conf" "$fc_conf_dir/"
+            echo "Fontconfig fallback rule: $fc_conf_dir/10-nerd-font-symbols.conf"
+        fi
+        if have fc-cache; then
+            fc-cache -f "$dest" >/dev/null
+        else
+            err "fc-cache not found; applications see the font after the next login"
+        fi
+    fi
+    echo "Installed $name into $dest"
+}
+
+# A glyph from Font Awesome's folder icon, as ranger devicons uses
+icon_font() {
+    have fc-match || return 1
+    fc-match -f '%{family[0]}' 'monospace:charset=f07b' 2>/dev/null
+}
+
+cmd_check() {
+    local fam
+    printf 'Icons:  \xef\x81\xbb folder  \xee\x98\x86 python  \xef\x84\xa6 branch  \xef\x80\x95 home\n'
+    echo "        (four icons above = working; boxes or blanks = no Nerd Font glyphs)"
+    if [ "$os" = mac ]; then
+        if ls "$font_root"/*NerdFont* >/dev/null 2>&1; then
+            echo "Nerd Font files found in $font_root"
+        else
+            echo "No Nerd Font in $font_root: run '$prog install'"
+        fi
+        return
+    fi
+    fam=$(icon_font)
+    case $fam in
+        *Nerd*) echo "fontconfig: icon glyphs come from '$fam'" ;;
+        "") echo "fontconfig not available; cannot check" ;;
+        *) echo "fontconfig: no Nerd Font covers the icons (got '$fam'): run '$prog install'" ;;
+    esac
+    case ${TERM_PROGRAM:-}${KITTY_WINDOW_ID:+kitty} in
+        kitty*|ghostty|WezTerm) echo "This terminal has the symbols built in." ;;
+    esac
+    echo "Restart the terminal after installing so it picks up new fonts."
+}
+
+cmd_terminal() {
+    local family=${1:-} size=${2:-11} font profile path
+    [ -n "$family" ] || die "usage: $prog terminal FAMILY [SIZE]  (e.g. 'JetBrainsMono Nerd Font')"
+    font="$family $size"
+
+    if [ -n "${PTYXIS_VERSION:-}" ] || { [ -z "${GNOME_TERMINAL_SCREEN:-}" ] && have ptyxis; }; then
+        gsettings set org.gnome.Ptyxis use-system-font false &&
+            gsettings set org.gnome.Ptyxis font-name "$font" &&
+            echo "Ptyxis now uses '$font'"
+        return
+    fi
+    if [ -n "${GNOME_TERMINAL_SCREEN:-}" ] && have gsettings; then
+        profile=$(gsettings get org.gnome.Terminal.ProfilesList default | tr -d "'")
+        path="org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/"
+        gsettings set "$path" use-system-font false &&
+            gsettings set "$path" font "$font" &&
+            echo "GNOME Terminal (default profile) now uses '$font'"
+        return
+    fi
+
+    case ${TERM_PROGRAM:-} in
+        iTerm.app) echo "iTerm2: Settings > Profiles > Text > Font: $family" ;;
+        Apple_Terminal) echo "Terminal.app: Settings > Profiles > Text > Font > Change: $family" ;;
+        *)
+            echo "Set the font in your terminal's configuration:"
+            echo "  kitty      ~/.config/kitty/kitty.conf          font_family $family"
+            echo "  Ghostty    ~/.config/ghostty/config            font-family = $family"
+            echo "  Alacritty  ~/.config/alacritty/alacritty.toml  [font.normal] family = \"$family\""
+            echo "  WezTerm    ~/.config/wezterm/wezterm.lua       font = wezterm.font '$family'"
+            ;;
+    esac
+}
+
+case ${1:-} in
+    "") cmd_install && echo && cmd_check ;;
+    install) shift; cmd_install "$@" ;;
+    check) cmd_check ;;
+    terminal) shift; cmd_terminal "$@" ;;
+    -h|--help|help) usage ;;
+    *) usage >&2; exit 2 ;;
+esac
